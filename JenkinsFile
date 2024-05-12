@@ -1,0 +1,34 @@
+pipeline {
+  agent any
+  stages {
+    stage('Checkout') {
+      steps {
+        sh 'echo passed'
+        git branch: 'main', url: 'https://github.com/mallikarjunajethin/first-maven-project.git'
+      }
+    }
+    stage('Build and Test') {
+      steps {
+        sh 'mvn clean package'
+      }
+    }
+    
+    stage('Build and Push Docker Image') {
+      environment {
+        DOCKER_IMAGE = "mallikarjunajethin/ultimate-cicd:${BUILD_NUMBER}"
+        // DOCKERFILE_LOCATION = "first-maven-project/Dockerfile"
+        REGISTRY_CREDENTIALS = credentials('dockerhub)
+      }
+      steps {
+        script {
+            sh 'cd java-maven-sonar-argocd-helm-k8s/spring-boot-app && docker build -t ${DOCKER_IMAGE} .'
+            def dockerImage = docker.image("${DOCKER_IMAGE}")
+            docker.withRegistry('https://hub.docker.com/repositories/mallikarjunajethin', "dockerhub") {
+                dockerImage.push()
+            }
+        }
+      }
+    }
+    
+  }
+}
